@@ -1,130 +1,85 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>イシュト秘書 Ver.2</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schedule App</title>
 <style>
-body{
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    margin:20px;
-    background:#f5f5f5;
-}
-
-h1{
-    text-align:center;
-}
-
-.form{
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-
-input,select,button{
-    padding:8px;
-    margin:5px;
-}
-
-button{
-    background:#007AFF;
-    color:white;
-    border:none;
-    border-radius:5px;
-}
-
-.calendar{
-    display:grid;
-    grid-template-columns:repeat(7,1fr);
-    gap:5px;
-}
-
-.day{
-    background:white;
-    min-height:80px;
-    border-radius:8px;
-    padding:5px;
-    border:1px solid #ddd;
-}
-
-.soccer{
-    background:#2e7d32;
-    color:white;
-    border-radius:4px;
-    padding:2px;
-    margin-top:2px;
-}
-
-.school{
-    background:#1565c0;
-    color:white;
-    border-radius:4px;
-    padding:2px;
-    margin-top:2px;
-}
-
-.private{
-    background:#7b1fa2;
-    color:white;
-    border-radius:4px;
-    padding:2px;
-    margin-top:2px;
-}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:1000px;margin:auto;padding:12px}
+input,select,button{padding:8px;margin:4px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;width:14.2%;height:90px;vertical-align:top;padding:4px}
+.event{color:white;border-radius:6px;padding:2px 4px;margin:2px 0;font-size:12px}
+.soccer{background:#2e7d32}
+.school{background:#1565c0}
+.private{background:#6a1b9a}
 </style>
 </head>
 <body>
-<h1>イシュト秘書 Ver.2</h1>
-<div class="form">
-    <input type="date" id="date">
-<select id="category">
-    <option value="soccer">サッカー協会</option>
-    <option value="school">学校</option>
-    <option value="private">private</option>
+<h1>イシュト専用カレンダー</h1>
+
+<input type="month" id="month">
+<br>
+<input type="date" id="date">
+<select id="cat">
+<option value="soccer">サッカー協会</option>
+<option value="school">学校</option>
+<option value="private">private</option>
 </select>
-
-<input type="text" id="title" placeholder="予定内容">
-
+<input type="text" id="title" placeholder="予定">
 <button onclick="addEvent()">追加</button>
-</div>
-<div id="calendar" class="calendar"></div>
+
+<table>
+<thead><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr></thead>
+<tbody id="cal"></tbody>
+</table>
+
 <script>
+let events=JSON.parse(localStorage.getItem("isht_v3")||"[]");
 
-const calendar=document.getElementById("calendar");
-
-for(let i=1;i<=35;i++){
-    const d=document.createElement("div");
-    d.className="day";
-    d.id="day"+i;
-    d.innerHTML="<strong>"+i+"</strong>";
-    calendar.appendChild(d);
+function save(){
+ localStorage.setItem("isht_v3",JSON.stringify(events));
+ render();
 }
 
 function addEvent(){
-
-    const date=document.getElementById("date").value;
-    const title=document.getElementById("title").value;
-    const category=document.getElementById("category").value;
-
-    if(!date || !title){
-        alert("日付と予定を入力してください");
-        return;
-    }
-
-    const day=parseInt(date.split("-")[2]);
-
-    const target=document.getElementById("day"+day);
-
-    if(target){
-        const event=document.createElement("div");
-        event.className=category;
-        event.textContent=title;
-        target.appendChild(event);
-    }
-
-    alert("予定を追加しました");
+ events.push({
+   date:document.getElementById('date').value,
+   cat:document.getElementById('cat').value,
+   title:document.getElementById('title').value
+ });
+ save();
 }
 
+function render(){
+ let m=document.getElementById('month').value;
+ if(!m)return;
+ let [y,mo]=m.split('-').map(Number);
+ let first=new Date(y,mo-1,1);
+ let last=new Date(y,mo,0);
+ let day=1,start=first.getDay();
+ let h='';
+ for(let r=0;r<6;r++){
+   h+='<tr>';
+   for(let c=0;c<7;c++){
+     if((r===0&&c<start)||day>last.getDate()){h+='<td></td>';}
+     else{
+       let ds=`${y}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+       let ev=events.filter(e=>e.date===ds)
+          .map(e=>`<div class="event ${e.cat}">${e.title}</div>`).join('');
+       h+=`<td><b>${day}</b>${ev}</td>`;
+       day++;
+     }
+   }
+   h+='</tr>';
+ }
+ document.getElementById('cal').innerHTML=h;
+}
+
+let n=new Date();
+document.getElementById('month').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+document.getElementById('month').onchange=render;
+render();
 </script>
 </body>
 </html>
