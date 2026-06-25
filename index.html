@@ -3,83 +3,392 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Schedule App</title>
+<title>イシュト専用カレンダー Ver.4</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:1000px;margin:auto;padding:12px}
-input,select,button{padding:8px;margin:4px}
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;width:14.2%;height:90px;vertical-align:top;padding:4px}
-.event{color:white;border-radius:6px;padding:2px 4px;margin:2px 0;font-size:12px}
-.soccer{background:#2e7d32}
-.school{background:#1565c0}
-.private{background:#6a1b9a}
+body{
+ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+ max-width:1100px;
+ margin:auto;
+ padding:12px;
+}
+
+h1{
+ margin-bottom:10px;
+}
+
+#todayBox{
+ background:#f5f5f5;
+ border-radius:10px;
+ padding:10px;
+ margin-bottom:12px;
+}
+
+#todayList{
+ line-height:1.8;
+}
+
+.controls{
+ margin-bottom:12px;
+}
+
+input,select,button{
+ padding:8px;
+ margin:4px;
+ border-radius:6px;
+ border:1px solid #ccc;
+}
+
+.monthBar{
+ margin-bottom:10px;
+}
+
+.monthBar button{
+ min-width:80px;
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+}
+
+th{
+ background:#f0f0f0;
+}
+
+th,td{
+ border:1px solid #ddd;
+ width:14.2%;
+ height:110px;
+ vertical-align:top;
+ padding:4px;
+}
+
+.event{
+ color:white;
+ border-radius:6px;
+ padding:2px 4px;
+ margin:2px 0;
+ font-size:12px;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+
+.soccer{
+ background:#2e7d32;
+}
+
+.school{
+ background:#1565c0;
+}
+
+.private{
+ background:#6a1b9a;
+}
+
+.deleteBtn{
+ cursor:pointer;
+ margin-left:6px;
+}
+
+.dayNum{
+ font-weight:bold;
+ margin-bottom:4px;
+}
 </style>
 </head>
 <body>
-<h1>イシュト専用カレンダー</h1>
-
+<h1>イシュト専用カレンダー Ver.4</h1>
+<div id="todayBox">
+<h3>今日の予定</h3>
+<div id="todayList">予定なし</div>
+</div>
+<div class="monthBar">
+<button onclick="changeMonth(-1)">◀ 前月</button>
 <input type="month" id="month">
-<br>
+<button onclick="changeMonth(1)">次月 ▶</button>
+</div>
+<div class="controls">
 <input type="date" id="date">
+<input type="time" id="time">
 <select id="cat">
-<option value="soccer">サッカー協会</option>
+<option value="soccer">サッカー</option>
 <option value="school">学校</option>
 <option value="private">private</option>
 </select>
 <input type="text" id="title" placeholder="予定">
-<button onclick="addEvent()">追加</button>
-
+</div>
 <table>
-<thead><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr></thead>
-<tbody id="cal"></tbody>
+<thead>
+<tr>
+<th>日</th>
+<th>月</th>
+<th>火</th>
+<th>水</th>
+<th>木</th>
+<th>金</th>
+<th>土</th>
+</tr>
+</thead>
+<tbody id="cal">
+</tbody>
 </table>
-
 <script>
-let events=JSON.parse(localStorage.getItem("isht_v3")||"[]");
 
+let events =
+JSON.parse(
+ localStorage.getItem("isht_v4") || "[]"
+);
 function save(){
- localStorage.setItem("isht_v3",JSON.stringify(events));
- render();
+localStorage.setItem(
+“isht_v4”,
+JSON.stringify(events)
+);
+render();
+renderToday();
 }
 
 function addEvent(){
- events.push({
-   date:document.getElementById('date').value,
-   cat:document.getElementById('cat').value,
-   title:document.getElementById('title').value
- });
- save();
+
+const date =
+document.getElementById(“date”).value;
+
+const time =
+document.getElementById(“time”).value;
+
+const cat =
+document.getElementById(“cat”).value;
+
+const title =
+document.getElementById(“title”).value;
+
+if(!date || !title){
+alert(“日付と予定を入力してください”);
+return;
 }
 
-function render(){
- let m=document.getElementById('month').value;
- if(!m)return;
- let [y,mo]=m.split('-').map(Number);
- let first=new Date(y,mo-1,1);
- let last=new Date(y,mo,0);
- let day=1,start=first.getDay();
- let h='';
- for(let r=0;r<6;r++){
-   h+='<tr>';
-   for(let c=0;c<7;c++){
-     if((r===0&&c<start)||day>last.getDate()){h+='<td></td>';}
-     else{
-       let ds=`${y}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-       let ev=events.filter(e=>e.date===ds)
-          .map(e=>`<div class="event ${e.cat}">${e.title}</div>`).join('');
-       h+=`<td><b>${day}</b>${ev}</td>`;
-       day++;
-     }
-   }
-   h+='</tr>';
- }
- document.getElementById('cal').innerHTML=h;
+events.push({
+date:date,
+time:time,
+cat:cat,
+title:title
+});
+
+save();
+
+document.getElementById(“title”).value=””;
 }
 
-let n=new Date();
-document.getElementById('month').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
-document.getElementById('month').onchange=render;
+function deleteEvent(index){
+
+if(confirm(“予定を削除しますか？”)){
+
+events.splice(index,1);
+
+save();
+}
+}
+
+function renderToday(){
+
+const now = new Date();
+
+const today =
+now.getFullYear()
+
+* “-”
+* String(now.getMonth()+1).padStart(2,“0”)
+* “-”
+* String(now.getDate()).padStart(2,“0”);
+
+const list =
+events
+.filter(e => e.date === today)
+.sort((a,b)=>
+(a.time||””)
+.localeCompare(b.time||””)
+);
+
+if(list.length===0){
+
+document.getElementById(
+“todayList”
+).innerHTML = “予定なし”;
+
+return;
+}
+
+document.getElementById(
+“todayList”
+).innerHTML =
+
+list.map(e=>
+
+(e.time || “–:–”)
+
+* “ “
+* e.title
+
+).join(””);
+}
+ function render(){
+
+let m =
+document.getElementById(“month”).value;
+
+if(!m) return;
+
+let [y,mo] =
+m.split(”-”).map(Number);
+
+let first =
+new Date(y,mo-1,1);
+
+let last =
+new Date(y,mo,0);
+
+let start =
+first.getDay();
+
+let day = 1;
+
+let html = “”;
+
+for(let r=0;r<6;r++){
+
+html += “”;
+
+for(let c=0;c<7;c++){
+
+if(
+(r===0 && c<start)
+||
+day>last.getDate()
+){
+
+html += "<td></td>";
+
+}
+
+else{
+
+let ds =
+  y + "-"
+  + String(mo).padStart(2,"0")
+  + "-"
+  + String(day).padStart(2,"0");
+let ev =
+  events
+  .map((e,i)=>({...e,index:i}))
+  .filter(e=>e.date===ds)
+  .sort((a,b)=>
+    (a.time||"")
+    .localeCompare(b.time||"")
+  )
+  .map(e=>`
+<div class="event ${e.cat}">
+<span>
+${e.time ? e.time+" " : ""}
+${e.title}
+</span>
+
+🗑
+</div>
+
+`).join(””);
+
+html += `
+<td>
+<div class="dayNum">${day}</div>
+${ev}
+</td>
+`;
+day++;
+
+}
+}
+
+html += “”;
+}
+
+document.getElementById(
+“cal”
+).innerHTML = html;
+}
+
+function changeMonth(diff){
+
+let m =
+document.getElementById(“month”).value;
+
+let [y,mo] =
+m.split(”-”).map(Number);
+
+let d =
+new Date(y,mo-1+diff,1);
+
+document.getElementById(
+“month”
+).value =
+d.getFullYear()
+
+* “-”
+* String(d.getMonth()+1)
+    .padStart(2,“0”);
+
 render();
+}
+
+let now = new Date();
+
+document.getElementById(
+“month”
+).value =
+now.getFullYear()
+
+* “-”
+* String(now.getMonth()+1)
+    .padStart(2,“0”);
+
+document.getElementById(
+“month”
+).onchange = render;
+
+render();
+renderToday();
+
+</script>
+</body>
+</html>
+html += "<td></td>";
+let ds =
+  y + "-"
+  + String(mo).padStart(2,"0")
+  + "-"
+  + String(day).padStart(2,"0");
+
+let ev =
+  events
+  .map((e,i)=>({...e,index:i}))
+  .filter(e=>e.date===ds)
+  .sort((a,b)=>
+    (a.time||"")
+    .localeCompare(b.time||"")
+  )
+  .map(e=>`
+  <div class="event ${e.cat}">
+<span>
+${e.time ? e.time+" " : ""}
+${e.title}
+</span>
+</div>
+html += `
+<td>
+<div class="dayNum">${day}</div>
+${ev}
+</td>
+`;
+day++;
 </script>
 </body>
 </html>
